@@ -109,18 +109,25 @@ turno_jogador:
     li a7, 4
     ecall
 
-    li a7, 5               # Leitura de número do jogador
-    la a0, buffer
-    li a1, 4
-    ecall
+    # Lê a escolha do jogador (1 ou 2)
+    li a7, 5               # syscall para leitura de número inteiro
+    ecall                  # Resultado será colocado em a0
 
-    la a0, buffer
-    lb t1, 0(a0)
-    addi t1, t1, -48  # Converte o caractere de ASCII para número
-
+    # Verifica se o jogador escolheu 1 para Hit
     li t4, 1
-    bne t1, t4, verificar_stand
+    beq a0, t4, jogador_hit
 
+    # Verifica se o jogador escolheu 2 para Stand
+    li t4, 2
+    beq a0, t4, turno_dealer
+
+    # Entrada inválida, exibe mensagem e retorna para escolher novamente
+    la a0, mensagem_invalida
+    li a7, 4
+    ecall
+    j turno_jogador
+
+jogador_hit:
     # Jogador escolheu Hit, sorteia nova carta
     jal gerar_carta        # Sorteia mais uma carta
     mv t5, a0              # Armazena a nova carta recebida
@@ -135,11 +142,11 @@ turno_jogador:
 
     # Atualiza a pontuação do jogador
     add s5, s5, t5         # Adiciona a nova carta à pontuação
-    jal verificar_as       # Verifica se a contagem de As deve ser ajustada
+    jal verificar_as       # Verifica se a contagem de Ás deve ser ajustada
 
     # Checa se o jogador estourou
     li t0, 21
-    blt s5, t0, turno_jogador  # Se a pontuação é menor que 21, continua jogando
+    blt s5, t0, turno_jogador  # Se a pontuação é menor que 21, volta para o turno do jogador
 
     # Jogador estourou
     la a0, mensagem_estouro
@@ -147,26 +154,10 @@ turno_jogador:
     ecall
     j jogar_novamente
 
-verificar_stand:
-    li t4, 2
-    bne t1, t4, entrada_invalida_jogo  # Se não for Stand, checa se é inválida
-
-    # Se for Stand, passa para o turno do dealer
 turno_dealer:
-    # Dealer revela suas cartas
-    mv a0, s4              # Mostra segunda carta do dealer
-    li a7, 1
-    ecall
-
-    # Simula o dealer tirando cartas se tiver menos de 17
-    li t0, 17              # Dealer deve continuar até ter 17 ou mais
-    blt s3, t0, dealer_hit  # Se total do dealer for menor que 17, compra mais uma
-
-    # Fim do turno, verificação final
-dealer_hit:
-    jal gerar_carta        # Dealer tira mais uma carta
-    mv s3, a0              # Atualiza carta do dealer
-    j turno_dealer         # Volta para o turno do dealer
+    # Código para o turno do dealer
+    # (deve conter a lógica para o dealer agir e, ao final, verificar o vencedor)
+    j jogar_novamente
 
 jogar_novamente:
     la a0, mensagem_jogar_novamente
@@ -183,12 +174,13 @@ fim_jogo:
 
 # Funções auxiliares
 gerar_carta:
-    # Gera uma carta aleatória entre 1 e 11
-    li t0, 11
+    # Gera uma carta aleatória entre 1 e 13 (para simular cartas de um baralho)
+    li t0, 13
     li t1, 1
     li a7, 42              # syscall para randomização
-    rem a0, a0, t0         # Gera número entre 0 e 10
-    add a0, a0, t1         # Gera número entre 1 e 11
+    ecall                  # Resultado será colocado em a0
+    rem a0, a0, t0         # Gera número entre 0 e 12
+    add a0, a0, t1         # Gera número entre 1 e 13
     ret
 
 calcular_pontuacao:
@@ -199,3 +191,4 @@ calcular_pontuacao:
 verificar_as:
     # Ajusta a contagem do Ás se estourar
     li t0, 10
+
